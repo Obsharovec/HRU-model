@@ -1,0 +1,87 @@
+package ru.dabutskikh.questionnaires.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import ru.dabutskikh.questionnaires.model.*;
+import ru.dabutskikh.questionnaires.service.interfaces.QuestionnaireService;
+import ru.dabutskikh.questionnaires.service.interfaces.UserAnswerService;
+import ru.dabutskikh.questionnaires.service.interfaces.UserService;
+
+@Controller
+@RequestMapping("/questionnaire")
+public class UserQuestionnaireController {
+
+    @Autowired
+    QuestionnaireService questionnaireService;
+
+    @Autowired
+    UserService userService;
+
+    @Autowired
+    UserAnswerService userAnswerService;
+
+    @GetMapping("/{id}")
+    public String getQuestion(@AuthenticationPrincipal UserDetails currentUser,
+                              @PathVariable("id") Long questionnaireId,
+                              @RequestParam("question") int idxQuestion,
+                              Model model) {
+
+        Questionnaire questionnaire = questionnaireService.findById(questionnaireId);
+        Question question = questionnaire.getQuestions().get(idxQuestion - 1);
+
+        User user = userService.findByLogin(currentUser.getUsername());
+        User userForm = new User();
+
+        userForm.getUserAnswers().addAll(
+                userAnswerService.getUserAnswersToQuestion(user, question)
+        );
+
+        model.addAttribute("isAdmin", user.getRole().equals(Role.ADMIN));
+        model.addAttribute("userId", user.getId());
+
+        model.addAttribute("questionnaire", questionnaire);
+        model.addAttribute("question", question);
+
+        model.addAttribute("userForm", userForm);
+        model.addAttribute("userAnswerOptions", userAnswerService.toUserAnswers(user, question.getAnswers()));
+
+        model.addAttribute("idxQuestion", idxQuestion);
+
+        return "answer_to_question";
+    }
+
+
+    @PostMapping("/{id}")
+    public String saveAnswers(@AuthenticationPrincipal UserDetails currentUser,
+                              @PathVariable("id") Long questionnaireId,
+                              @RequestParam("question") int idxQuestion,
+                              @ModelAttribute User userForm) {
+
+        User user = userService.findByLogin(currentUser.getUsername());
+
+        Questionnaire questionnaire = questionnaireService.findById(questionnaireId);
+        Question question = questionnaire.getQuestions().get(idxQuestion - 1);
+
+        userAnswerService.replaceQuestionUserAnswers(user, question, userForm.getUserAnswers());
+        return "redirect:/questionnaire/" + questionnaireId + "?question=" + idxQuestion;
+    }
+
+    @PostMapping("/{id}/save")
+    public String completeQuestionnaire(@AuthenticationPrincipal UserDetails currentUser,
+                                        @PathVariable Long id) {
+        User user = userService.findByLogin(currentUser.getUsername());
+        Questionnaire questionnaire = questionnaireService.findById(id);
+        for (int i = 0; i < questionnaire.getQuestions().size(); i++) {
+            Question currentQuestion = questionnaire.getQuestions().get(i);
+            if (userAnswerService.getUserAnswersToQuestion(user, currentQuestion).size() == 0) {
+                return "redirect:/questionnaire/" + id + "?question=" + (i + 1);
+            }
+        }
+        userAnswerService.setFinalStatus(userAnswerService.getUserAnswersToQuestionnaire(user, questionnaire));
+        return "redirect:/history";
+    }
+}

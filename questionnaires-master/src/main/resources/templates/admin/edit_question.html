@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="base::common_header('Вопрос')"></head>
+<body>
+    <div>
+        <nav th:replace="base::admin_navbar"></nav>
+        <div class="container">
+            <h2 th:text="'Редактирание формулировки вопроса (анкета: ' + ${question.questionnaire.name} + ')'"></h2>
+            <div class="row m-2">
+                <a th:href="@{/admin/questions(questionnaire_id=${question.questionnaire.id})}" class="col-md-2">← К вопросам</a>
+            </div>
+            <div class="row m-2">
+                <form th:method="patch" th:action="@{/admin/questions/{id}(id=${question.id})}" th:object="${question}" class="col-md-3">
+                    <div class="form-group">
+                        <label for="name">Вопрос</label>
+                        <input type="text" th:field="*{name}" id="name" name="name" placeholder="Новая формулировка" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="is_multiply" name="is_multiply" th:field="*{multiplyAnswer}">
+                        <label for="is_multiply">несколько вариантов ответа</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Редактировать</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

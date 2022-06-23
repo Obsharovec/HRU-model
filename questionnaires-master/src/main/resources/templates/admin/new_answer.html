@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="base::common_header('Ответ')"></head>
+<body>
+    <div>
+        <nav th:replace="base::admin_navbar"></nav>
+        <div class="container">
+            <h2 th:text="'Новый ответ (вопрос: ' + ${parentQuestion.name} + ')'"></h2>
+            <div class="row m-2">
+                <a th:href="@{/admin/answers(question_id=${parentQuestion.id})}" class="col-md-2">← К ответам</a>
+            </div>
+            <div class="row m-2">
+                <form th:method="post" th:action="@{/admin/answers(question_id=${parentQuestion.id})}" th:object="${answerForm}" class="col-md-3">
+                    <div class="form-group">
+                        <label for="name">Ответ</label>
+                        <input type="text" th:field="*{name}" id="name" name="name" placeholder="Формулировка" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
